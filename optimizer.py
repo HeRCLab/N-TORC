@@ -233,7 +233,7 @@ class Layer:
         if attr_name == 'filt_width':
             return self.config.get('kernel_size', [1])[0]
         if attr_name == 'sequence_length':
-            return self.build_config.get('sequence_length', None)  # Adjust as necessary
+            return self.build_config.get('sequence_length', None) 
         if attr_name == 'n_filt':
             return self.config.get('filters', 1)
         return None
