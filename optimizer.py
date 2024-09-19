@@ -2,150 +2,16 @@ import pandas as pd
 import numpy as np
 import json
 from sklearn.ensemble import RandomForestRegressor
-#from sklearn.tree import DecisionTreeRegressor
-
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.impute import SimpleImputer
 from gurobipy import Model, GRB, quicksum
 import os
 import yaml
-import json
-from sklearn.metrics import r2_score
+from sklearn.tree import export_graphviz
+import graphviz
+import warnings
 
-
-
-#import warnings
-#warnings.filterwarnings("ignore")
-
-#Random forest regresor
-def train_rf_model(X, y):
-    #splitting the data: 80% training and 20% test 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model =  RandomForestRegressor(random_state=42)
-    model.fit(X_train, y_train)
-    
-
-    
-    y_pred = model.predict(X_test)
-    
-    
-    r2 = r2_score(y_test, y_pred)
-    
-    return model, r2
-
-#Load the data
-resources_conv_df = pd.read_csv('collapsed_conv_resources.csv')
-latency_conv_df = pd.read_csv('conv_latency_collapsed.csv')
-
-
-
-# Rename columns in latency data to match resource data
-latency_conv_df = latency_conv_df.rename(columns={
-    'correct_reuse_factor_latency': 'correct_reuse_factor_resource',
-    'n_inputs_latency': 'n_inputs_resources',
-    'cnn_filters_latency': 'cnn_filters_resources',
-    'sequence_length_latency': 'sequence_length_resource'
-})
-
-# Merge the dataframes on the common columns
-merged_conv_data = pd.merge(resources_conv_df, latency_conv_df, on=[
-    'correct_reuse_factor_resource', 'n_inputs_resources',
-    'cnn_filters_resources', 'sequence_length_resource'
-])
-
-# Extract features and targets for Random Forest
-X_conv = merged_conv_data[['correct_reuse_factor_resource', 'n_inputs_resources', 'cnn_filters_resources', 'sequence_length_resource']]
-y_min_conv = merged_conv_data['latency_min']
-y_max_conv = merged_conv_data['latency_max']
-bram_conv = merged_conv_data['bram_18k']
-lut_conv = merged_conv_data['lut']
-ff_conv = merged_conv_data['ff']
-dsp_conv = merged_conv_data['dsp48e']
-
-# Train Random Forest models for Conv1D
-rf_models_conv = {}
-print("R² Scores for Conv1D Layers:")
-for key, y in zip(['latency_min', 'latency_max', 'bram_18k', 'lut', 'ff', 'dsp48e'],
-                  [y_min_conv, y_max_conv, bram_conv, lut_conv, ff_conv, dsp_conv]):
-    model, r2 = train_rf_model(X_conv, y)
-    rf_models_conv[key] = model
-    print(f"R² score for Conv1D {key}: {r2:.4f}")
-
-
-
-
-resources_lstm_df = pd.read_csv('lstm_resources_collapsed.csv')
-latency_lstm_df = pd.read_csv('lstm_latency_collapsed.csv')
-
-
-
-latency_lstm_df = latency_lstm_df.rename(columns={
-    'correct_reuse_factor_lstm_latency': 'correct_reuse_factor_lstm_resource',
-    'n_inputs_latency': 'n_inputs_resources',
-    'sequence_length_latency': 'sequence_length_resource',
-    'lstm_size': 'lstm_size'
-})
-
-
-merged_lstm_data = pd.merge(resources_lstm_df, latency_lstm_df, on=[
-    'correct_reuse_factor_lstm_resource', 'n_inputs_resources',
-    'sequence_length_resource', 'lstm_size'
-])
-
-
-X_lstm = merged_lstm_data[['correct_reuse_factor_lstm_resource', 'n_inputs_resources', 'sequence_length_resource', 'lstm_size']]
-y_min_lstm = merged_lstm_data['latency_min']
-y_max_lstm = merged_lstm_data['latency_max']
-bram_lstm = merged_lstm_data['bram_18k']
-lut_lstm = merged_lstm_data['lut']
-ff_lstm = merged_lstm_data['ff']
-dsp_lstm = merged_lstm_data['dsp48e']
-
-# Train Random Forest models for LSTM
-rf_models_lstm = {}
-print("\nR² Scores for LSTM Layers:")
-for key, y in zip(['latency_min', 'latency_max', 'bram_18k', 'lut', 'ff', 'dsp48e'],
-                  [y_min_lstm, y_max_lstm, bram_lstm, lut_lstm, ff_lstm, dsp_lstm]):
-    model, r2 = train_rf_model(X_lstm, y)
-    rf_models_lstm[key] = model
-    print(f"R² score for LSTM {key}: {r2:.4f}")
-
-#Dense Layer data
-resources_dense_df = pd.read_csv('dense_resources_collapsed.csv')
-latency_dense_df = pd.read_csv('dense_latency_collapsed.csv')
-
-
-
-latency_dense_df = latency_dense_df.rename(columns={
-    'correct_reuse_factor_dense_latency': 'correct_reuse_factor_dense_resource',
-    'n_inputs_latency': 'n_inputs_resources',
-    'sequence_length_latency': 'sequence_length_resource',
-    'dense_size_latency': 'dense_size_resource'
-})
-
-
-merged_dense_data = pd.merge(resources_dense_df, latency_dense_df, on=[
-    'correct_reuse_factor_dense_resource', 'n_inputs_resources',
-    'sequence_length_resource', 'dense_size_resource'
-])
-
-
-X_dense = merged_dense_data[['correct_reuse_factor_dense_resource', 'n_inputs_resources', 'sequence_length_resource', 'dense_size_resource']]
-y_min_dense = merged_dense_data['latency_min']
-y_max_dense = merged_dense_data['latency_max']
-bram_dense = merged_dense_data['bram_18k']
-lut_dense = merged_dense_data['lut']
-ff_dense = merged_dense_data['ff']
-dsp_dense = merged_dense_data['dsp48e']
-
-#Train Random Forest model for Dense
-rf_models_dense = {}
-print("\nR² Scores for Dense Layers:")
-for key, y in zip(['latency_min', 'latency_max', 'bram_18k', 'lut', 'ff', 'dsp48e'],
-                  [y_min_dense, y_max_dense, bram_dense, lut_dense, ff_dense, dsp_dense]):
-    model, r2 = train_rf_model(X_dense, y)
-    rf_models_dense[key] = model
-    print(f"R² score for Dense {key}: {r2:.4f}")
+warnings.filterwarnings("ignore")
 
 # Function to validate the reuse factor
 def validate_reuse_factor(n_in, n_out, rf):
@@ -170,25 +36,24 @@ class ModelAnalyzer:
         self.first_conv1d = True 
 
     def get_layer_mult_size(self, layer):
-        
         if 'Dense' in layer.class_name:
-            n_in = layer.get_attr('n_in')
-            n_out = layer.get_attr('n_out')
+            n_in = layer.get_attr('n_in') or 0
+            n_out = layer.get_attr('n_out') or 0
             return n_in, n_out
 
         if 'Conv1D' in layer.class_name:
             if self.first_conv1d:
-                n_in = layer.get_attr('filt_width')
+                n_in = layer.get_attr('filt_width') or 1
                 self.first_conv1d = False  
             else:
-                n_in = layer.get_attr('n_chan') * layer.get_attr('filt_width')
-            n_out = layer.get_attr('n_filt')
+                n_in = (layer.get_attr('n_chan') or 1) * (layer.get_attr('filt_width') or 1)
+            n_out = layer.get_attr('n_filt') or 1
             return n_in, n_out
 
         if 'LSTM' in layer.class_name:
-            n_in = layer.get_attr('n_in')
-            n_out = layer.get_attr('n_out') * 4  # 4 gates in LSTM
-            n_in_recr = layer.get_attr('n_out')
+            n_in = layer.get_attr('n_in') or 0
+            n_out = (layer.get_attr('n_out') or 0) * 4  # 4 gates in LSTM
+            n_in_recr = layer.get_attr('n_out') or 0
             n_out_recr = n_out
             return n_in, n_out, n_in_recr, n_out_recr
 
@@ -202,8 +67,7 @@ class ModelAnalyzer:
             else:
                 n_in, n_out = self.get_layer_mult_size(layer)
 
-            # Add check to ensure n_in and n_out are not None
-            if n_in is None or n_out is None:
+            if n_in == 0 or n_out == 0:
                 print(f"Error: n_in or n_out is None for layer {layer.name} ({layer.class_name})")
                 continue
 
@@ -213,14 +77,15 @@ class ModelAnalyzer:
 
         return valid_factors
 
-
 class Layer:
-    def __init__(self, class_name, config, build_config):
+    def __init__(self, class_name, config, build_config, model_config, is_first_cnn=False):
         self.class_name = class_name
         self.config = config
         self.build_config = build_config
-        self.name = config.get('name', 'unknown')  
-
+        self.model_config = model_config 
+        self.name = config.get('name', 'unknown')
+        self.is_first_cnn = is_first_cnn  # Use the flag passed during initialization
+    
     def get_attr(self, attr_name):
         if attr_name == 'n_in':
             input_shape = self.build_config.get('input_shape', [])
@@ -228,36 +93,136 @@ class Layer:
                 return input_shape[-1]
         if attr_name == 'n_out':
             return self.config.get('units', 1)
-        if attr_name == 'n_chan':
+        if attr_name == 'n_chan' or attr_name == 'cnn_filters':
             return self.config.get('filters', 1)
+        if attr_name == 'cnn_n_in':
+            if 'Conv1D' in self.class_name:
+                if self.is_first_cnn:
+                    for layer in self.model_config['config']['layers']:
+                        if layer['class_name'] == 'InputLayer':
+                            input_shape = layer['config']['batch_input_shape']
+                            if len(input_shape) > 1:
+                                return input_shape[1]
+                input_shape = self.build_config.get('input_shape', [])
+                return input_shape[2] if len(input_shape) > 2 else None
+        if attr_name == 'dense_size':
+            if 'Dense' in self.class_name:
+                return self.config.get('units')
+        if attr_name == 'lstm_n_in':
+            if 'LSTM' in self.class_name:
+                input_shape = self.build_config.get('input_shape', [])
+                return input_shape[2] if len(input_shape) > 2 else None
         if attr_name == 'filt_width':
             return self.config.get('kernel_size', [1])[0]
+        if attr_name == 'dense_in':
+            if 'Dense' in self.class_name:
+                input_shape = self.build_config.get('input_shape', [])
+                return input_shape[1]
         if attr_name == 'sequence_length':
-            return self.build_config.get('sequence_length', None) 
+            if 'Conv1D' in self.class_name:
+                if self.is_first_cnn:
+                    return 1  # Set sequence length to 1 only for the very first Conv1D layer
+                else:
+                    input_shape = self.build_config.get('input_shape', [])
+                    return input_shape[1] if len(input_shape) > 1 else None
+            if 'LSTM' in self.class_name:
+                input_shape = self.build_config.get('input_shape', [])
+                return input_shape[1] if len(input_shape) > 1 else None
+            return self.build_config.get('sequence_length', None)
+        if attr_name == 'lstm_size':
+            if 'LSTM' in self.class_name:
+                return self.config.get('units')
         if attr_name == 'n_filt':
             return self.config.get('filters', 1)
         return None
-#Incorporated from our MATLAB code
-def calculate_dense_sequence_length(layer_index, n_lstm, n_cnn, cnn_filters, lstm_size, inputs):
-    if layer_index == 0:  # First Dense Layer
-        if n_lstm > 0:  # LSTM layers present
-            n_inputs = lstm_size * inputs / (2 ** n_cnn)
-            sequence_length = inputs / (2 ** n_cnn)
-        else:  # No LSTM layers
-            n_inputs = cnn_filters * inputs / (2 ** n_cnn)
-            sequence_length = inputs / (2 ** n_cnn)
-    else:  # Subsequent Dense Layers
-        n_inputs = None 
-        sequence_length = inputs / (2 ** n_cnn)
+
+# Function to train and evaluate models
+def train_and_evaluate(X, y, max_depth=None):
+    # Splitting the data: 80% training and 20% test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Initialize and train the model
+    model = RandomForestRegressor(max_depth=max_depth, random_state=42)
+    model.fit(X_train, y_train)
+
+    # Predicting the test set
+    y_pred = model.predict(X_test)
+
+    # Calculating metrics
+    mae = mean_absolute_error(y_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    r2 = r2_score(y_test, y_pred)
+
+    return model, r2, mae, rmse
+
+# Function to train layers separately
+def train_layers_separately(resources_file, latency_file, resource_columns, latency_columns, target_columns):
+    # Load and process data
+    resources_df = pd.read_csv(resources_file)
+    latency_df = pd.read_csv(latency_file)
+
+    # Initialize models dictionary
+    rf_models = {}
     
-    # Last Dense Layer
-    if layer_index == len(layers) - 1:
-        n_inputs = 1
-        sequence_length = 1
+    # Train models for resource targets
+    print(f"\nModel Performance Metrics for Resources in {resources_file}:")
+    for target in target_columns:
+        if target in resources_df.columns:
+            X = resources_df[resource_columns]
+            y = resources_df[target]
+            model, r2, mae, rmse = train_and_evaluate(X, y)
+            rf_models[f'resource_{target}'] = model
+            print(f"Resource {target} - R² score: {r2:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}")
+    
+    # Train models for latency targets
+    print(f"\nModel Performance Metrics for Latency in {latency_file}:")
+    for target in target_columns:
+        if target in latency_df.columns:
+            X = latency_df[latency_columns]
+            y = latency_df[target]
+            model, r2, mae, rmse = train_and_evaluate(X, y)
+            rf_models[f'latency_{target}'] = model
+            print(f"Latency {target} - R² score: {r2:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}")
+    
+    return rf_models
+    # Columns to use from each dataset
+resource_columns_conv = ['correct_reuse_factor_resource', 'n_inputs_resources', 'cnn_filters_resources', 'sequence_length_resource']
+latency_columns_conv = ['correct_reuse_factor_latency', 'n_inputs_latency', 'cnn_filters_latency', 'sequence_length_latency']
+resource_columns_lstm = ['correct_reuse_factor_lstm_resource', 'n_inputs_resources', 'sequence_length_resource', 'lstm_size']
+latency_columns_lstm = ['correct_reuse_factor_lstm_latency', 'n_inputs_latency', 'sequence_length_latency', 'lstm_size']
+resource_columns_dense = ['correct_reuse_factor_dense_resource', 'n_inputs_resources', 'sequence_length_resource', 'dense_size_resource']
+latency_columns_dense = ['correct_reuse_factor_dense_latency', 'n_inputs_latency', 'sequence_length_latency', 'dense_size_latency']
+# Target columns for the models
+target_columns = ['latency_min', 'latency_max', 'bram_18k', 'lut', 'ff', 'dsp48e']
+# Train models for Conv1D layers
+rf_models_conv = train_layers_separately(
+    'collapsed_conv_resources.csv',
+    'conv_latency_collapsed.csv',
+    resource_columns_conv,
+    latency_columns_conv,
+    target_columns
+)
+print("Keys in rf_models_conv:", rf_models_conv.keys())
 
-    return sequence_length
+# Train models for LSTM layers
+rf_models_lstm = train_layers_separately(
+    'lstm_resources_collapsed.csv',
+    'lstm_latency_collapsed.csv',
+    resource_columns_lstm,
+    latency_columns_lstm,
+    target_columns
+)
+# Train models for Dense layers
+rf_models_dense = train_layers_separately(
+    'dense_resources_collapsed.csv',
+    'dense_latency_collapsed.csv',
+    resource_columns_dense,
+    latency_columns_dense,
+    target_columns
+)
 
-#Optimizer
+
+# Optimizer function
 def optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_models_lstm, rf_models_dense):
     model = Model('NetworkReuseFactorOptimization')
     model.setParam('OutputFlag', True)  # turn off solver output
@@ -274,11 +239,11 @@ def optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_mod
     # Iterate over each layer
     for layer_name, layer_factors in valid_factors.items():
         layer = next(l for l in layers if l.name == layer_name)
-
-        # Created binary variables for each possible reuse factor
+        
+        # Create binary variables for each possible reuse factor
         rf_binary_vars = {rf: model.addVar(vtype=GRB.BINARY, name=f"rf_{layer_name}_{rf}") for rf in layer_factors}
         
-        # Created a reuse factor variable
+        # Create a reuse factor variable
         reuse_factor = model.addVar(vtype=GRB.INTEGER, name=f"reuse_factor_{layer_name}")
         
         # Constraint to ensure exactly one reuse factor is chosen
@@ -286,102 +251,105 @@ def optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_mod
         
         # Linking the integer reuse factor variable with the binary variables
         model.addConstr(reuse_factor == quicksum(rf * rf_binary_vars[rf] for rf in layer_factors))
-
+        
         # Extract data for prediction
         if 'Conv1D' in layer.class_name:
-            n_in = layer.get_attr('n_in') or 0
+            n_in = layer.get_attr('cnn_n_in') or 0
             cnn_filters = layer.get_attr('cnn_filters') or 0
             sequence_length = layer.get_attr('sequence_length') or 0
+            print(f"sequence_length:{sequence_length}")
+            print(f"cnn_filters:{cnn_filters}")
+            print(f"cnn_in:{n_in}")
 
-            
+
             X_pred = np.array([[rf, n_in, cnn_filters, sequence_length] for rf in layer_factors])
         
             latency_min_pred = quicksum(
-                rf_models_conv['latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['latency_latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
+            
             latency_max_pred = quicksum(
-                rf_models_conv['latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['latency_latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             bram_usage_pred = quicksum(
-                rf_models_conv['bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['resource_bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             dsp_usage_pred = quicksum(
-                rf_models_conv['dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['resource_dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             ff_usage_pred = quicksum(
-                rf_models_conv['ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['resource_ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             lut_usage_pred = quicksum(
-                rf_models_conv['lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_conv['resource_lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
 
         elif 'LSTM' in layer.class_name:
-            n_in = layer.get_attr('n_in') or 0
+            n_in = layer.get_attr('lstm_n_in') or 0
             sequence_length = layer.get_attr('sequence_length') or 0
             lstm_size = layer.get_attr('lstm_size') or 0
 
             X_pred = np.array([[rf, n_in, sequence_length, lstm_size] for rf in layer_factors])
 
             latency_min_pred = quicksum(
-                rf_models_lstm['latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['latency_latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             latency_max_pred = quicksum(
-                rf_models_lstm['latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['latency_latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             bram_usage_pred = quicksum(
-                rf_models_lstm['bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['resource_bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             dsp_usage_pred = quicksum(
-                rf_models_lstm['dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['resource_dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             ff_usage_pred = quicksum(
-                rf_models_lstm['ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['resource_ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             lut_usage_pred = quicksum(
-                rf_models_lstm['lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_lstm['resource_lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
 
         elif 'Dense' in layer.class_name:
-            n_in = layer.get_attr('n_in') or 0
-            n_out = layer.get_attr('n_out') or 0
-            sequence_length = layer.get_attr('sequence_length') or 0
+            n_in = layer.get_attr('dense_in') 
+            dense_size = layer.get_attr('dense_size') or 1
 
-            X_pred = np.array([[rf, n_in, n_out, sequence_length] for rf in layer_factors])
+            X_pred = np.array([[rf, n_in, 1, dense_size] for rf in layer_factors])
 
             latency_min_pred = quicksum(
-                rf_models_dense['latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['latency_latency_min'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             latency_max_pred = quicksum(
-                rf_models_dense['latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['latency_latency_max'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             bram_usage_pred = quicksum(
-                rf_models_dense['bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['resource_bram_18k'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             dsp_usage_pred = quicksum(
-                rf_models_dense['dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['resource_dsp48e'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             ff_usage_pred = quicksum(
-                rf_models_dense['ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['resource_ff'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
             lut_usage_pred = quicksum(
-                rf_models_dense['lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
+                rf_models_dense['resource_lut'].predict(X_pred[i].reshape(1, -1))[0] * rf_binary_vars[rf]
                 for i, rf in enumerate(layer_factors)
             )
 
@@ -392,31 +360,36 @@ def optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_mod
         total_dsp_usage += dsp_usage_pred
         total_ff_usage += ff_usage_pred
         total_lut_usage += lut_usage_pred
+        for i, rf in enumerate(layer_factors):
+            if 'Conv1D' in layer.class_name:
+                predicted_lut = rf_models_conv['resource_lut'].predict(X_pred[i].reshape(1, -1))[0]* rf_binary_vars[rf]
 
+                predicted_ff = rf_models_conv['resource_ff'].predict(X_pred[i].reshape(1, -1))[0]* rf_binary_vars[rf]
+
+                print(f"Layer: {layer_name}, Reuse Factor: {rf}, Predicted LUT: {predicted_lut}, Predicted FF: {predicted_ff}")
+                #importances = rf_models_conv['lut'].feature_importances_
+                #feature_names = ['reuse_factor', 'n_in', 'cnn_filters', 'sequence_length']
+                #importance_dict = dict(zip(feature_names, importances))
+                #print("Feature importances for LUT prediction:", importance_dict)
     # Slack variables for big networks
     slack_bram = model.addVar(name="slack_bram", lb=0)
     slack_dsp = model.addVar(name="slack_dsp", lb=0)
     slack_ff = model.addVar(name="slack_ff", lb=0)
     slack_lut = model.addVar(name="slack_lut", lb=0)
 
-    #constraints
-    model.addConstr(total_bram_usage <= 624 * 0.95 + slack_bram, "BRAM constraint")
-    model.addConstr(total_dsp_usage <= 1728 * 0.95 + slack_dsp, "DSP constraint")
-    model.addConstr(total_ff_usage <= 460800 * 0.95 + slack_ff, "FF constraint")
-    model.addConstr(total_lut_usage <= 230400 * 0.95 + slack_lut, "LUT constraint")
+    # Constraints
+    model.addConstr(total_bram_usage <= 624 * 0.95 + slack_bram, "BRAM_constraint")
+    model.addConstr(total_dsp_usage <= 1728 * 0.95 + slack_dsp, "DSP_constraint")
+    model.addConstr(total_ff_usage <= 460800  + slack_ff, "FF_constraint")
+    model.addConstr(total_lut_usage <= 230400  + slack_lut, "LUT_constraint")
 
-    #objective function
+    # Objective function
     model.setObjective(total_latency_min + total_latency_max + 1000 * (slack_bram + slack_dsp + slack_ff + slack_lut), GRB.MINIMIZE)
-    #model.computeIIS()
 
-    #optimize the model
+    # Optimize the model
     model.optimize()
-    model.write("rf.sol")
 
-    
-    
-    
-    # warning if slack being used
+    # Warning if slack being used
     slack_used = any(var.X > 0 for var in [slack_bram, slack_dsp, slack_ff, slack_lut])
     if slack_used:
         print("WARNING: Slack variables were used, indicating that the network may not fit onto the ZCU104 Board.")
@@ -426,22 +399,29 @@ def optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_mod
         print("Optimal solution found.")
         for layer_name in valid_factors.keys():
             selected_rf = [rf for rf in valid_factors[layer_name] if model.getVarByName(f"rf_{layer_name}_{rf}").X > 0.5]
+
             if selected_rf:
                 reuse_factors[layer_name] = selected_rf[0]
+                rf = selected_rf[0]
+                layer = next((layer for layer in layers if layer.name == layer_name), None)
+                if layer and 'Conv1D' in layer.class_name:
+                    # Construct X_pred for the selected reuse factor
+                    n_in = layer.get_attr('cnn_n_in') or 0
+                    cnn_filters = layer.get_attr('cnn_filters') or 0
+                    sequence_length = layer.get_attr('sequence_length') or 0
+                    X_pred = np.array([[rf, n_in, cnn_filters, sequence_length]])
+
+                    # Perform the prediction
+                    predicted_lut_value = rf_models_conv['resource_lut'].predict(X_pred)[0]
+                    print(f"Layer: {layer.name}, Reuse Factor: {rf}, Predicted LUT: {predicted_lut_value}")
             else:
                 print(f"No feasible solution found for layer {layer_name} that fits the resource constraints.")
     else:
         print(f"Optimizer did not find an optimal solution. Status: {model.status}")
         
-
     return reuse_factors
 
-
-
-
-
-
-
+# Function to generate YAML for HLS4ML
 def generate_yaml_for_hls4ml(directory, filename, model_directory, optimized_reuse_factors):
     # Load the Keras model JSON
     model_json_path = os.path.join(model_directory, filename + ".json")
@@ -464,9 +444,8 @@ def generate_yaml_for_hls4ml(directory, filename, model_directory, optimized_reu
             if layer_name and layer_name not in unique_layer_names:
                 unique_layer_names.append(layer_name)
 
-    # Assign optimized reuse factors to each layers
+    # Assign optimized reuse factors to each layer
     for layer_name in unique_layer_names:
-        # Use the optimized reusefactor
         reuse_factor = optimized_reuse_factors.get(layer_name, optimized_reuse_factors.get(unique_layer_names[0], 16))
         layer_name_config[layer_name] = {
             "ReuseFactor": reuse_factor,
@@ -502,44 +481,76 @@ def generate_yaml_for_hls4ml(directory, filename, model_directory, optimized_reu
     except IOError as e:
         print(f"ERROR: Could not open {yaml_path} for writing: {e}")
 
+# Function to predict LUT for Conv1D layers
+def predict_lut_for_conv1d(rf_model, reuse_factor, n_in, sequence_length, cnn_filter_size):
+    X_pred = np.array([[reuse_factor, n_in, cnn_filter_size, sequence_length]])
+    predicted_lut = rf_model['resource_lut'].predict(X_pred)[0]
+    return predicted_lut
 
+# Example usage
+reuse_factor = 1
+n_in = 16  
+sequence_length = 8  
+cnn_filter_size = 32  
 
-
-
-
+# Assuming rf_models_conv is defined elsewhere
+predicted_lut = predict_lut_for_conv1d(rf_models_conv, reuse_factor, n_in, sequence_length, cnn_filter_size)
+print(f"Predicted LUT for Conv1D with reuse factor {reuse_factor}, n_in {n_in}, sequence length {sequence_length}, cnn_filter_size {cnn_filter_size}: {predicted_lut}")
 
 # Load JSON data for the network
-with open('network_112_1_23_1_57_5_83_83_83_83_83.json', 'r') as f:
+with open('CNN_model.json', 'r') as f:
     model_config = json.load(f)
 
 # Extract layers and get valid reuse factors
 analyzer = ModelAnalyzer()
 layers = []
 
-# Parse the model configuration and create Layer instances
+# Extract information from the model configuration
 n_lstm = sum(1 for layer_config in model_config['config']['layers'] if 'LSTM' in layer_config['class_name'])
 n_cnn = sum(1 for layer_config in model_config['config']['layers'] if 'Conv1D' in layer_config['class_name'])
 cnn_filters = next((layer_config['config']['filters'] for layer_config in model_config['config']['layers'] if 'Conv1D' in layer_config['class_name']), 1)
 
 # Extracting input length from InputLayer configuration
-inputs = next((layer_config['config']['batch_input_shape'][1] 
+inputs = next((layer_config['config']['batch_input_shape'][1]
                for layer_config in model_config['config']['layers'] if layer_config['class_name'] == 'InputLayer'), 1)
 
 # Parse the model configuration and create Layer instances
+is_first_cnn = True  # Initialize flag for identifying the first Conv1D layer
+total_layers = len(model_config['config']['layers'])
+
 for i, layer_config in enumerate(model_config['config']['layers']):
     class_name = layer_config['class_name']
     config = layer_config['config']
     build_config = layer_config.get('build_config', {})
-
     if class_name == 'Dense':
-        sequence_length = calculate_dense_sequence_length(i, n_lstm, n_cnn, cnn_filters, cnn_filters, inputs)
+        #sequence_length = calculate_dense_sequence_length(i, n_lstm, n_cnn, cnn_filters, cnn_filters, inputs, total_layers)
         build_config['sequence_length'] = sequence_length
-
+    if class_name == 'Conv1D':
+        if is_first_cnn:
+            layer = Layer(class_name, config, build_config, model_config, is_first_cnn=True)
+            is_first_cnn = False  # Switch off the flag after processing the first Conv1D layer
+        else:
+            layer = Layer(class_name, config, build_config, model_config, is_first_cnn=False)
+    elif class_name in ['Dense', 'LSTM']:
+        layer = Layer(class_name, config, build_config, model_config)
     if class_name in ['Dense', 'Conv1D', 'LSTM']:
-        layer = Layer(class_name, config, build_config)
         layers.append(layer)
+
 # Analyze model to get valid reuse factors
 valid_factors = analyzer.analyze_model(layers)
+
+# Count the number of valid reuse factors for each layer
+valid_counts = {layer_name: len(factors) for layer_name, factors in valid_factors.items()}
+
+# Calculate the total number of possible combinations
+total_combinations = 1
+for count in valid_counts.values():
+    total_combinations *= count
+
+print("Number of valid reuse factors for each layer:")
+for layer_name, count in valid_counts.items():
+    print(f"{layer_name}: {count}")
+print(f"\nTotal number of possible combinations: {total_combinations/1000000} million")
 
 # Optimize reuse factors for the entire network
 optimal_reuse_factors = optimize_reuse_factors_network(layers, valid_factors, rf_models_conv, rf_models_lstm, rf_models_dense)
@@ -547,9 +558,8 @@ print("Optimal Reuse Factors for Network:")
 for layer_name, reuse_factor in optimal_reuse_factors.items():
     print(f"{layer_name}: {reuse_factor}")
 
-
-
-directory="/share/ss121/hls4ml_suyash/hls4ml_explorer/training/training_new_data"
-model_directory="/share/ss121/hls4ml_suyash/hls4ml_explorer/training/training_new_data"
-filename="CNN_model"
-#generate_yaml_for_hls4ml(directory, filename, model_directory, optimal_reuse_factors)
+# Example YAML generation call
+# directory = "path_to_yaml_directory"
+# model_directory = "path_to_model_directory"
+# filename = "CNN_model"
+# generate_yaml_for_hls4ml(directory, filename, model_directory, optimal_reuse_factors)
