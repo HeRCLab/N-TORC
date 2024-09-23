@@ -51,3 +51,15 @@ FF Constraint:
 LUT Constraint: 
     Sum(LUT usage) ≤ LUT limit + slack_LUT
 
+Purpose of the Slack Penalty:
+Penalty for Constraint Violations:
+
+The slack variables (slack BRAM,slack DSP,slack FF,slackLUT ) represent the amount by which the resource constraints are violated. In an ideal solution, no slack is used, meaning the network fits within the resource limits.
+By multiplying the sum of the slack variables by a large constant , the optimization problem penalizes solutions that require more resources than available. This forces the optimizer to prioritize solutions that minimize slack usage, i.e., it discourages exceeding hardware resource limits.
+Balancing Latency and Resource Usage:
+The primary objective is to minimize latency. However, without this penalty, the optimizer might find a solution that minimizes latency but exceeds resource limits.
+By adding a large penalty for slack, the optimizer is encouraged to find a trade-off between minimizing latency and fitting the design within the available hardware resources. The weight of 1000 ensures that exceeding resource limits is heavily penalized, making it undesirable unless absolutely necessary.
+Flexibility in Resource Allocation:
+Slack variables provide flexibility to allow some violations if it's not possible to meet resource constraints strictly. However, the large multiplier ensures that this happens only as a last resort.
+
+
