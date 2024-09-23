@@ -1,0 +1,19 @@
+name: hls4ml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8  # You can specify the Python version if needed
+  - pandas
+  - numpy
+  - scikit-learn
+  - gurobi
+  - tensorflow
+  - graphviz
+  - matplotlib
+  - pyyaml
+  - json5
+  - multiprocess
+  - pip
+  - pip:
+      - hls4ml
