@@ -27,9 +27,20 @@ matplotlib: Plotting (optional).
 
 yaml: YAML file handling.
 
-graphviz: Graph generation.
+graphviz: Graph generation(optional).
 
 HLS4ML: For hardware synthesis after YAML generation.
+
+yaml: YAML file handling.
+
+json: JSON file handling.
+
+os: Operating system interaction.
+
+subprocess: Running shell commands.
+
+multiprocessing: Parallel processing.
+
 
 
 Mathematical Model
