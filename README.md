@@ -1,6 +1,12 @@
 # HLS4ML explorer
 
-Usage: python src/optmizer.py <json_file>
+Usage: 
+
+conda env create -f environment.yml
+
+conda activate hls4ml
+
+python src/optmizer.py <json_file>
 
 
 This tool performs reuse factor optimization for neural network layers (Conv1D, LSTM, and Dense) with a focus on minimizing resource usage and latency. It leverages RandomForestRegressor models for resource and latency prediction and optimizes reuse factors using Gurobi. The tool also generates YAML configuration files for HLS4ML, providing an efficient pipeline for hardware synthesis.
