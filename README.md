@@ -10,16 +10,25 @@ Predicts LUT, BRAM, FF, DSP usage, and latency for Conv1D, LSTM, and Dense layer
 Optimizes reuse factors for each layer using Gurobi to minimize latency while respecting hardware resource constraints.
 Generates HLS4ML-compatible YAML files for FPGA implementation.
 Supports evaluation and training of RandomForest models for resource and latency predictions.
+
 Prerequisites
+
 Required Libraries:
+
 pandas: Data manipulation and analysis.
+
 numpy: Numerical computing.
+
 scikit-learn: Machine learning algorithms (RandomForestRegressor).
+
 gurobipy: Optimization with Gurobi.
+
 matplotlib: Plotting (optional).
+
 yaml: YAML file handling.
+
 graphviz: Graph generation.
-Optional Tools:
+
 HLS4ML: For hardware synthesis after YAML generation.
 
 
