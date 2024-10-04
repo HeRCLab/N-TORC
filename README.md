@@ -4,7 +4,7 @@ Usage:
 
 conda env create -f environment.yml
 
-conda activate hls4ml
+conda activate hls4ml_explorer
 
 python src/optmizer.py <json_file>
 
