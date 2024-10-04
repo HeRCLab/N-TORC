@@ -1,4 +1,4 @@
-name: hls4ml
+name: hls4ml_explorer
 channels:
   - conda-forge
   - defaults
