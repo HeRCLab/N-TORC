@@ -49,34 +49,4 @@ multiprocessing: Parallel processing.
 
 
 
-Mathematical Model
-The optimization tool minimizes latency while respecting hardware resource constraints (BRAM, DSP, FF, LUT). For a detailed breakdown of the objective function and constraints, refer to the Objective Function and Constraints section below.
-
-Minimize: 
-    Sum (i=1 to L) of (Latency_max^i) 
-    + 1000 * (slack_BRAM + slack_DSP + slack_FF + slack_LUT)
-
-BRAM Constraint: 
-    Sum(BRAM usage) ≤ BRAM limit + slack_BRAM
-
-DSP Constraint: 
-    Sum(DSP usage) ≤ DSP limit + slack_DSP
-
-FF Constraint: 
-    Sum(FF usage) ≤ FF limit + slack_FF
-
-LUT Constraint: 
-    Sum(LUT usage) ≤ LUT limit + slack_LUT
-
-Purpose of the Slack Penalty:
-Penalty for Constraint Violations:
-
-The slack variables (slack BRAM,slack DSP,slack FF,slackLUT ) represent the amount by which the resource constraints are violated. In an ideal solution, no slack is used, meaning the network fits within the resource limits.
-By multiplying the sum of the slack variables by a large constant , the optimization problem penalizes solutions that require more resources than available. This forces the optimizer to prioritize solutions that minimize slack usage, i.e., it discourages exceeding hardware resource limits.
-Balancing Latency and Resource Usage:
-The primary objective is to minimize latency. However, without this penalty, the optimizer might find a solution that minimizes latency but exceeds resource limits.
-By adding a large penalty for slack, the optimizer is encouraged to find a trade-off between minimizing latency and fitting the design within the available hardware resources. The weight of 1000 ensures that exceeding resource limits is heavily penalized, making it undesirable unless absolutely necessary.
-Flexibility in Resource Allocation:
-Slack variables provide flexibility to allow some violations if it's not possible to meet resource constraints strictly. However, the large multiplier ensures that this happens only as a last resort.
-
 
