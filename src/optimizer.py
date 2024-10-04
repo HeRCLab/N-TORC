@@ -13,9 +13,10 @@ import warnings
 import matplotlib.pyplot as plt
 import math
 import sys
-
+import csv
+import time
 warnings.filterwarnings("ignore")
-
+start_time=time.time()
 # Function to validate the reuse factor
 def validate_reuse_factor(n_in, n_out, rf):
     multfactor = min(n_in, rf)
@@ -55,10 +56,14 @@ class ModelAnalyzer:
        
 
         if 'LSTM' in layer.class_name:
-            n_in = layer.get_attr('n_in') 
-            n_out = layer.get_attr('n_out')  * 4  # 4 gates in LSTM
+            n_in = layer.get_attr('n_in')
+            print(f"lstm:{n_in}")
+            n_out = layer.get_attr('n_out')  * 4
+            print(f"lstm_out:{n_out}")# 4 gates in LSTM
             n_in_recr = layer.get_attr('n_out')
+            print(f"lstm_in_recr:{n_in_recr}")
             n_out_recr = n_out
+            print(f"lstm_out_rece:{n_out_recr}")
             return n_in, n_out, n_in_recr, n_out_recr
 
         raise Exception(f'Cannot get mult size for layer {layer.name} ({layer.class_name})')
@@ -69,7 +74,8 @@ class ModelAnalyzer:
     def get_layer_block_factor(self, n_in, n_out, reuse_factor):
         block_factor = self.div_roundup(n_in * n_out, reuse_factor)
         return block_factor
-        
+   
+    
 
     def analyze_model(self, layers):
         valid_factors = {}
@@ -77,7 +83,7 @@ class ModelAnalyzer:
         
         for layer in layers:
             if 'LSTM' in layer.class_name:
-                n_in, n_out, _, _ = self.get_layer_mult_size(layer)
+                n_in, n_out, n_in_recr , n_out_recr  = self.get_layer_mult_size(layer)
             else:
                 n_in, n_out = self.get_layer_mult_size(layer)
 
@@ -118,12 +124,6 @@ class Layer:
             return self.config.get('filters', 1)
         if attr_name == 'cnn_n_in':
             if 'Conv1D' in self.class_name:
-                if self.is_first_cnn:
-                    for layer in self.model_config['config']['layers']:
-                        if layer['class_name'] == 'InputLayer':
-                            input_shape = layer['config']['batch_input_shape']
-                            if len(input_shape) > 1:
-                                return input_shape[1]
                 input_shape = self.build_config.get('input_shape', [])
                 return input_shape[2] if len(input_shape) > 2 else None
         if attr_name == 'dense_size':
@@ -141,11 +141,8 @@ class Layer:
                 return input_shape[1]
         if attr_name == 'sequence_length':
             if 'Conv1D' in self.class_name:
-                if self.is_first_cnn:
-                    return 1  # Set sequence length to 1 only for the very first Conv1D layer
-                else:
-                    input_shape = self.build_config.get('input_shape', [])
-                    return input_shape[1] if len(input_shape) > 1 else None
+                input_shape = self.build_config.get('input_shape', [])
+                return input_shape[1] if len(input_shape) > 1 else None
             if 'LSTM' in self.class_name:
                 input_shape = self.build_config.get('input_shape', [])
                 return input_shape[1] if len(input_shape) > 1 else None
@@ -245,6 +242,9 @@ rf_models_dense = train_layers_separately(
 )
 
 
+
+
+
 # Extract layers and get valid reuse factors
 analyzer = ModelAnalyzer()
 layers = []
@@ -310,10 +310,12 @@ def filter_valid_reuse_factors_with_block(layers, valid_factors, block_factors):
     return filtered_factors
 filtered_factors = filter_valid_reuse_factors_with_block(layers, valid_factors, block_factors)
 
+
 # Optimizer function
+
 def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_models_lstm, rf_models_dense):
     model = Model('NetworkReuseFactorOptimization')
-    model.setParam('OutputFlag', True)  # turn off solver output
+    model.setParam('OutputFlag', True)  # Enable solver output
     reuse_factors = {}
 
     # Initialization
@@ -345,10 +347,6 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
             n_in = layer.get_attr('cnn_n_in') or 0
             cnn_filters = layer.get_attr('cnn_filters') or 0
             sequence_length = layer.get_attr('sequence_length') or 0
-            print(f"sequence_length:{sequence_length}")
-            print(f"cnn_filters:{cnn_filters}")
-            print(f"cnn_in:{n_in}")
-
 
             X_pred = np.array([[rf, n_in, cnn_filters, sequence_length] for rf in layer_factors])
         
@@ -448,24 +446,7 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
         total_dsp_usage += dsp_usage_pred
         total_ff_usage += ff_usage_pred
         total_lut_usage += lut_usage_pred
-        for i, rf in enumerate(layer_factors):
-            if 'Conv1D' in layer.class_name:
-                predicted_lut = rf_models_conv['resource_lut'].predict(X_pred[i].reshape(1, -1))[0]
-                predicted_dsp=rf_models_conv['resource_dsp48e'].predict(X_pred[i].reshape(1,-1))[0]
-                predicted_ff = rf_models_conv['resource_ff'].predict(X_pred[i].reshape(1, -1))[0]
 
-                print(f"Layer: {layer_name}, Reuse Factor: {rf}, Predicted LUT: {predicted_lut}, Predicted FF: {predicted_ff}, Predicted DSP:{predicted_dsp}")
-                #importances = rf_models_conv['resource_lut'].feature_importances_
-                #feature_names = ['reuse_factor', 'n_in', 'cnn_filters', 'sequence_length']
-                #importance_dict = dict(zip(feature_names, importances))
-                #importances_percentage = [imp * 100 for imp in importances]
-                #plt.figure(figsize=(8, 6))
-                #plt.barh(feature_names, importances_percentage, color='skyblue')
-                #plt.xlabel('Importance (%)')
-                #plt.title('Feature Importances for LUT Prediction')
-                #plt.grid(True, axis='x', linestyle='--', alpha=0.7)
-                #plt.show()
-                #print("Feature importances for LUT prediction:", importance_dict)
     # Slack variables for big networks
     slack_bram = model.addVar(name="slack_bram", lb=0)
     slack_dsp = model.addVar(name="slack_dsp", lb=0)
@@ -473,10 +454,10 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
     slack_lut = model.addVar(name="slack_lut", lb=0)
 
     # Constraints
-    model.addConstr(total_bram_usage <= 624*0.80  + slack_bram, "BRAM_constraint")
-    model.addConstr(total_dsp_usage <= 1728*0.80  + slack_dsp, "DSP_constraint")
-    model.addConstr(total_ff_usage <= 460800*0.80  + slack_ff, "FF_constraint")
-    model.addConstr(total_lut_usage <= 230400*0.80  + slack_lut, "LUT_constraint")
+    model.addConstr(total_bram_usage <= 624  + slack_bram, "BRAM_constraint")
+    model.addConstr(total_dsp_usage <= 1728  + slack_dsp, "DSP_constraint")
+    model.addConstr(total_ff_usage <= 460800  + slack_ff, "FF_constraint")
+    model.addConstr(total_lut_usage <= 230400  + slack_lut, "LUT_constraint")
 
     # Objective function
     model.setObjective( total_latency_max + 1000 * (slack_bram + slack_dsp + slack_ff + slack_lut), GRB.MINIMIZE)
@@ -492,6 +473,12 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
     # Extract optimal reuse factors 
     if model.status == GRB.OPTIMAL:
         print("Optimal solution found.")
+        print(f"\nTotal predicted_latency_max: {total_latency_max.getValue():.2f}")
+        print(f"Total predicted_lut: {total_lut_usage.getValue():.2f}")
+        print(f"Total predicted_bram: {total_bram_usage.getValue():.2f}")
+        print(f"Total predicted_dsp: {total_dsp_usage.getValue():.2f}")
+        print(f"Total predicted_ff: {total_ff_usage.getValue():.2f}\n")
+
         for layer_name in filtered_factors.keys():
             selected_rf = [rf for rf in filtered_factors[layer_name] if model.getVarByName(f"rf_{layer_name}_{rf}").X > 0.5]
 
@@ -518,65 +505,7 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
 
 
 
-# Function to generate YAML for HLS4ML
-def generate_yaml_for_hls4ml(directory, filename, model_directory, optimized_reuse_factors):
-    # Load the Keras model JSON
-    model_json_path = os.path.join(model_directory, filename + ".json")
-    try:
-        with open(model_json_path, "r") as json_file:
-            model_json = json.load(json_file)
-    except (IOError, json.JSONDecodeError) as e:
-        print(f"ERROR: Could not read or parse {model_json_path}: {e}")
-        return
-    
-    # Initialize LayerName section
-    layer_name_config = {}
-    unique_layer_names = []
 
-    # Extract layer names and assign optimized reuse factors
-    for layer in model_json["config"]["layers"]:
-        layer_class = layer["class_name"]
-        if layer_class in ["Conv1D", "LSTM", "Dense"]:
-            layer_name = layer["config"].get("name", "")
-            if layer_name and layer_name not in unique_layer_names:
-                unique_layer_names.append(layer_name)
-
-    # Assign optimized reuse factors to each layer
-    for layer_name in unique_layer_names:
-        reuse_factor = optimized_reuse_factors.get(layer_name, optimized_reuse_factors.get(unique_layer_names[0], 16))
-        layer_name_config[layer_name] = {
-            "ReuseFactor": reuse_factor,
-            "Strategy": "Resource",
-            "Compression": True
-        }
-
-    # Build YAML content
-    yaml_content = {
-        "Backend": "Vivado",
-        "Part": "xczu7ev-ffvc1156-2-e",
-        "ClockPeriod": 4,
-        "IOType": "io_stream",
-        "keras_json_model": os.path.join(model_directory, filename + ".json"),
-        "KerasH5": os.path.join(model_directory, filename + ".h5"),
-        "OutputDir": filename,
-        "ProjectName": filename,
-        "HLSConfig": {
-            "Model": {
-                "Precision": "ap_fixed<16,8,AP_RND,AP_SAT>",
-                "ReuseFactor": 16,
-                "Strategy": "Resource",
-            },
-            "LayerName": layer_name_config
-        }
-    }
-
-    # Save the YAML content to a file
-    yaml_path = os.path.join(directory, filename + ".yaml")
-    try:
-        with open(yaml_path, "w") as yaml_file:
-            yaml.dump(yaml_content, yaml_file, default_flow_style=False, sort_keys=False)
-    except IOError as e:
-        print(f"ERROR: Could not open {yaml_path} for writing: {e}")
 
 
 
@@ -594,7 +523,10 @@ for layer_name, count in valid_counts.items():
 print(f"\nTotal number of possible combinations: {total_combinations/1000000} million")
 
 # Optimize reuse factors for the entire network
+#output_csv_path = 'network_predictions_total.csv'
+start_time=time.time()
 optimal_reuse_factors = optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_models_lstm, rf_models_dense)
+
 print("Optimal Reuse Factors for Network:")
 for layer_name, reuse_factor in optimal_reuse_factors.items():
     print(f"{layer_name}: {reuse_factor}")
@@ -721,11 +653,76 @@ output_csv_paths = {
 
 
 save_predictions_to_csv(layers, filtered_factors, rf_models_conv, rf_models_lstm, rf_models_dense, output_csv_paths)
+end_time=time.time()
+elapsed_time=end_time-start_time
+print(f"\n Process completed in {elapsed_time:.2f} seconds")
 
+# Function to generate YAML for HLS4ML
+def generate_yaml_for_hls4ml(json_path, filename, optimized_reuse_factors):
+    # Construct paths for JSON and H5 files
+    model_json_path = json_path
+    model_h5_path = os.path.splitext(json_path)[0] + ".h5"
 
+    # Load the Keras model JSON
+    try:
+        with open(model_json_path, "r") as json_file:
+            model_json = json.load(json_file)
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"ERROR: Could not read or parse {model_json_path}: {e}")
+        return
 
-# Example YAML generation call
-# directory = "path_to_yaml_directory"
-# model_directory = "path_to_model_directory"
-# filename = "CNN_model"
-# generate_yaml_for_hls4ml(directory, filename, model_directory, optimal_reuse_factors)
+    # Initialize LayerName section
+    layer_name_config = {}
+    unique_layer_names = []
+
+    # Extract layer names and assign optimized reuse factors
+    for layer in model_json["config"]["layers"]:
+        layer_class = layer["class_name"]
+        if layer_class in ["Conv1D", "LSTM", "Dense"]:
+            layer_name = layer["config"].get("name", "")
+            if layer_name and layer_name not in unique_layer_names:
+                unique_layer_names.append(layer_name)
+
+    # Assign optimized reuse factors to each layer
+    for layer_name in unique_layer_names:
+        reuse_factor = optimized_reuse_factors.get(layer_name, optimized_reuse_factors.get(unique_layer_names[0], 16))
+        layer_name_config[layer_name] = {
+            "ReuseFactor": reuse_factor,
+            "Strategy": "Resource"
+        }
+
+    # Find the highest reuse factor in layer_name_config
+    highest_reuse_factor = max(config["ReuseFactor"] for config in layer_name_config.values())
+
+    # Build YAML content
+    yaml_content = {
+        "Backend": "Vivado",
+        "Part": "xczu7ev-ffvc1156-2-e",
+        "ClockPeriod": 4,
+        "IOType": "io_stream",
+        "KerasJson": model_json_path,
+        "KerasH5": model_h5_path,
+        "OutputDir": os.path.splitext(filename)[0],
+        "ProjectName": os.path.splitext(filename)[0],
+        "HLSConfig": {
+            "Model": {
+                "Precision": "ap_fixed<16,8,AP_RND,AP_SAT>",
+                "ReuseFactor": highest_reuse_factor,
+                "Strategy": "Resource",
+            },
+            "LayerName": layer_name_config
+        }
+    }
+
+    # Save the YAML content to a file in the current directory
+    yaml_path = os.path.join(os.getcwd(), os.path.splitext(filename)[0] + ".yaml")
+
+    try:
+        with open(yaml_path, "w") as yaml_file:
+            yaml.dump(yaml_content, yaml_file, default_flow_style=False, sort_keys=False)
+        print(f"YAML file saved at: {yaml_path}")
+    except IOError as e:
+        print(f"ERROR: Could not open {yaml_path} for writing: {e}")
+
+# Example call to the function
+generate_yaml_for_hls4ml(filename, filename, optimal_reuse_factors)
