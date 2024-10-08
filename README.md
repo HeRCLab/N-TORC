@@ -10,6 +10,14 @@ python src/optmizer.py three_lstm_model.json
 
 
 This will create a yaml file with the optimized reuse factor for each layer in the current directory.
+Linux Users:
+source Vivado/2019.1/settings.sh (vivado environment script)
+
+convert the yaml files into hls code:
+hls4ml convert -c three_lstm_model.yaml
+
+Go to the directory three_lstm_model/
+run vivado_hls -f build_prj.tcl
 
 This tool performs reuse factor optimization for neural network layers (Conv1D, LSTM, and Dense) with a focus on minimizing resource usage and latency. It leverages RandomForestRegressor models for resource and latency prediction and optimizes reuse factors using Gurobi. The tool also generates YAML configuration files for HLS4ML, providing an efficient pipeline for hardware synthesis.
 
