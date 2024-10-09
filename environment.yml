@@ -3,11 +3,10 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.8.19  
+  - python=3.8.19
   - pandas
   - numpy
   - scikit-learn
-  - gurobipy
   - tensorflow
   - graphviz
   - matplotlib
@@ -17,3 +16,4 @@ dependencies:
   - pip
   - pip:
       - hls4ml
+      - gurobipy
