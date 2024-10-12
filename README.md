@@ -1,12 +1,39 @@
 # HLS4ML explorer
 
 Example Usage: 
+## Setting up the Environment
 
-conda env create -f environment.yml
+To set up the environment using `conda`, you can use the provided `environment.yml` file. Follow these steps:
 
-conda activate hls4ml_explorer
+1. Ensure you have [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed.
+   
+2. Open a terminal (or Anaconda Prompt).
 
-python src/optmizer.py three_lstm_model.json
+3. Run the following command to create the environment:
+
+    ```bash
+    conda env create -f environment.yml
+    ```
+
+4. Once the environment is created, activate it:
+
+    ```bash
+    conda activate hls4ml_explorer
+    ```
+
+5. Verify the environment is activated and all dependencies are installed:
+
+    ```bash
+    conda list
+    ```
+
+6. To run the optimizer with the provided JSON model, use the following command:
+
+    ```bash
+    python src/optimizer.py three_lstm_model.json
+    ```
+
+You are now ready to use the `hls4ml_explorer` environment and run the optimizer with the specified model.
 
 
 This will create a yaml file with the optimized reuse factor for each layer in the current directory.
@@ -14,8 +41,9 @@ Linux Users:
 source Vivado/2019.1/settings.sh (vivado environment script)
 
 convert the yaml files into hls code:
+  ```bash
 hls4ml convert -c three_lstm_model.yaml
-
+```
 Go to the directory three_lstm_model/
 run vivado_hls -f build_prj.tcl
 
