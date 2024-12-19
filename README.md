@@ -88,6 +88,10 @@ multiprocessing: Parallel processing.
 
 If you use this tool in your research, please cite the corresponding publication as follows:
  ```bash
-\copyrightyear{2025} \acmYear{2025} \setcopyright{rightsretained} \acmConference[FPGA '25]{Proceedings of the 2025 ACM/SIGDA International Symposium on Field Programmable Gate Arrays}{February 27-March 1, 2025}{Monterey, CA, USA} \acmBooktitle{Proceedings of the 2025 ACM/SIGDA International Symposium on Field Programmable Gate Arrays (FPGA '25), February 27-March 1, 2025, Monterey, CA, USA} \acmDOI{10.1145/3706628.3708848} \acmISBN{979-8-4007-1396-5/25/02}
+\copyrightyear{2025}
+\acmYear{2025}
+\setcopyright{rightsretained}
+\acmConference[FPGA '25]{Proceedings of the 2025 ACM/SIGDA International Symposium on Field Programmable Gate Arrays}{February 27-March 1, 2025}{Monterey, CA, USA}
+\acmBooktitle{Proceedings of the 2025 ACM/SIGDA International Symposium on Field Programmable Gate Arrays (FPGA '25), February 27-March 1, 2025, Monterey, CA, USA} \acmDOI{10.1145/3706628.3708848} \acmISBN{979-8-4007-1396-5/25/02}
  ```
 
