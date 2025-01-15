@@ -494,11 +494,7 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
     
      #Latency constraint
     model.addConstr(total_latency_min <= 50000, "Latency_constraint")
-    # Constraints
-    model.addConstr(total_bram_usage <= 624  + slack_bram, "BRAM_constraint")
-    model.addConstr(total_dsp_usage <= 1728  + slack_dsp, "DSP_constraint")
-    model.addConstr(total_ff_usage <= 460800  + slack_ff, "FF_constraint")
-    model.addConstr(total_lut_usage <= 230400  + slack_lut, "LUT_constraint")
+   
 
     # Objective function
     model.setObjective(total_bram_usage + total_dsp_usage + total_ff_usage + total_lut_usage ,GRB.MINIMIZE)
