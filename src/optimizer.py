@@ -491,12 +491,9 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
         total_ff_usage += ff_usage_pred
         total_lut_usage += lut_usage_pred
 
-    # Slack variables for big networks
-    slack_bram = model.addVar(name="slack_bram", lb=0)
-    slack_dsp = model.addVar(name="slack_dsp", lb=0)
-    slack_ff = model.addVar(name="slack_ff", lb=0)
-    slack_lut = model.addVar(name="slack_lut", lb=0)
-
+    
+     #Latency constraint
+    model.addConstr(total_latency_min <= 50000, "Latency_constraint")
     # Constraints
     model.addConstr(total_bram_usage <= 624  + slack_bram, "BRAM_constraint")
     model.addConstr(total_dsp_usage <= 1728  + slack_dsp, "DSP_constraint")
@@ -504,8 +501,7 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
     model.addConstr(total_lut_usage <= 230400  + slack_lut, "LUT_constraint")
 
     # Objective function
-    model.setObjective( total_latency_max + 1000 * (slack_bram + slack_dsp + slack_ff + slack_lut), GRB.MINIMIZE)
-
+    model.setObjective(total_bram_usage + total_dsp_usage + total_ff_usage + total_lut_usage ,GRB.MINIMIZE)
     # Optimize the model
     model.optimize()
 
