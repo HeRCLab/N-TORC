@@ -87,7 +87,7 @@ def run_optimizer_and_update_csv(output_csv):
     print(f"CSV file '{output_csv}' updated with results for {len(results)} networks.")
 
 # Output CSV file
-output_csv = "networks_fccm.csv"
+output_csv = "networks_predicted.csv"
 
 run_optimizer_and_update_csv(output_csv)
 
