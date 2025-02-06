@@ -1,4 +1,4 @@
-#Running the Optimizer Script
+# Running the Optimizer Script
 
 1. Activate the conda environment
 ```bash
