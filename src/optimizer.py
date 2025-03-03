@@ -8,7 +8,7 @@ from gurobipy import Model, GRB, quicksum
 import os
 import yaml
 from sklearn.tree import export_graphviz
-#import graphviz
+import graphviz
 import warnings
 import matplotlib.pyplot as plt
 import math
@@ -34,6 +34,7 @@ def get_valid_reuse_factors(n_in, n_out):
         if validate_reuse_factor(n_in, n_out, rf):
             valid_reuse_factors.append(rf)
     return valid_reuse_factors
+
 class ModelAnalyzer:
     def __init__(self):
         self.first_conv1d = True 
@@ -74,34 +75,34 @@ class ModelAnalyzer:
         block_factor = self.div_roundup(n_in * n_out, reuse_factor)
         return block_factor
    
+    
+
     def analyze_model(self, layers):
         valid_factors = {}
         block_factors = {}
+        
         for layer in layers:
             if 'LSTM' in layer.class_name:
-                n_in, n_out, n_in_recr, n_out_recr = self.get_layer_mult_size(layer)
-
-                if n_in != n_in_recr or n_out != n_out_recr:
-                   
-                  
-                   reuse_factors = get_valid_reuse_factors(n_in_recr, n_out_recr)
-                else:
-                    reuse_factors = get_valid_reuse_factors(n_in, n_out)
+                n_in, n_out, n_in_recr , n_out_recr  = self.get_layer_mult_size(layer)
             else:
                 n_in, n_out = self.get_layer_mult_size(layer)
-                reuse_factors = get_valid_reuse_factors(n_in, n_out)
+
             if n_in == 0 or n_out == 0:
-               print(f"Error: n_in or n_out is None for layer {layer.name} ({layer.class_name})")
-               continue
+                print(f"Error: n_in or n_out is None for layer {layer.name} ({layer.class_name})")
+                continue
+
+            reuse_factors = get_valid_reuse_factors(n_in, n_out)
             valid_factors[layer.name] = reuse_factors
+
+            
             block_factors[layer.name] = {
-              rf: self.get_layer_block_factor(n_in, n_out, rf) for rf in reuse_factors
+                rf: self.get_layer_block_factor(n_in, n_out, rf) for rf in reuse_factors
             }
+
             print(f"Valid reuse factors for layer {layer.name} ({layer.class_name}): {reuse_factors}")
             print(f"Block factors for layer {layer.name} ({layer.class_name}): {block_factors[layer.name]}")
-        return valid_factors, block_factors
 
-    
+        return valid_factors, block_factors
    
 class Layer:
     def __init__(self, class_name, config, build_config, model_config, is_first_cnn=False):
@@ -157,45 +158,24 @@ class Layer:
 
         return None
 
-
+# Function to train and evaluate models with 100% training and R2 for predicted data
 def train_and_evaluate(X, y, max_depth=None):
-    # Split data into 80% training and 20% validation
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-
-
+    # Initialize and train the model on 100% of the data
     model = RandomForestRegressor(max_depth=max_depth, random_state=0)
-    model.fit(X_train, y_train)
+    model.fit(X, y)
 
-    # Predicting on the validation data
-    y_val_pred = model.predict(X_val)
+    # Predicting on the same training data
+    y_train_pred = model.predict(X)
 
-    # Calculating metrics for validation data
-    mae_val = mean_absolute_error(y_val, y_val_pred)
-    rmse_val = np.sqrt(mean_squared_error(y_val, y_val_pred))
-    mape_val, rmse_percentage_val = calculate_mape_rmse_percentage(y_val, y_val_pred)
-    r2_val = r2_score(y_val, y_val_pred)
+    # Calculating metrics
+    mae = mean_absolute_error(y, y_train_pred)
+    rmse = np.sqrt(mean_squared_error(y, y_train_pred))
+    r2 = r2_score(y, y_train_pred)
 
-    # Print metrics for validation
-    print(f"Validation Metrics: R² score: {r2_val:.4f}, MAE: {mae_val:.4f}, RMSE: {rmse_val:.4f}, MAPE: {mape_val:.2f}%, RMSE %: {rmse_percentage_val:.2f}%")
-
-    return model, r2_val, mae_val, rmse_val, mape_val, rmse_percentage_val
-def calculate_mape_rmse_percentage(y_true, y_pred, epsilon=1e-10):
-    # Filter out very small values from y_true
-    threshold = 1e-3
-    mask = y_true > threshold
-    y_true_filtered = y_true[mask]
-    y_pred_filtered = y_pred[mask]
-
-    # Calculate MAPE and RMSE percentage using filtered values
-    mape = np.mean(np.abs((y_true_filtered - y_pred_filtered) / (y_true_filtered + epsilon))) * 100
-    rmse_percentage = (np.sqrt(np.mean((y_true_filtered - y_pred_filtered) ** 2)) / (np.mean(y_true_filtered) + epsilon)) * 100
-    return mape, rmse_percentage
+    return model, r2, mae, rmse
 
 
-
-
-
-# Updated function to train layers separately and store additional metrics
+# Function to train layers separately
 def train_layers_separately(resources_file, latency_file, resource_columns, latency_columns, target_columns):
     # Load and process data
     resources_df = pd.read_csv(resources_file)
@@ -203,52 +183,28 @@ def train_layers_separately(resources_file, latency_file, resource_columns, late
 
     # Initialize models dictionary
     rf_models = {}
-
-    # Lists to store RMSE and MAE values
-    rmse_values = []
-    mae_values = []
-
+    
     # Train models for resource targets
     print(f"\nModel Performance Metrics for Resources in {resources_file}:")
     for target in target_columns:
         if target in resources_df.columns:
             X = resources_df[resource_columns]
             y = resources_df[target]
-            model, r2_val, mae_val, rmse_val, mape_val, rmse_percentage_val = train_and_evaluate(X, y)
+            model, r2, mae, rmse = train_and_evaluate(X, y)
             rf_models[f'resource_{target}'] = model
-            rmse_values.append(rmse_val)  # Store the RMSE value for validation
-            mae_values.append(mae_val)    # Store the MAE value for validation
-
-            # Print additional metrics for validation
-            print(f"Resource {target} - Validation R²: {r2_val:.4f}, MAE: {mae_val:.4f}, RMSE: {rmse_val:.4f}, MAPE: {mape_val:.2f}%, RMSE %: {rmse_percentage_val:.2f}%")
-
+            print(f"Resource {target} - R² score: {r2:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}")
+    
     # Train models for latency targets
     print(f"\nModel Performance Metrics for Latency in {latency_file}:")
     for target in target_columns:
         if target in latency_df.columns:
             X = latency_df[latency_columns]
             y = latency_df[target]
-            model, r2_val, mae_val, rmse_val, mape_val, rmse_percentage_val = train_and_evaluate(X, y)
+            model, r2, mae, rmse = train_and_evaluate(X, y)
             rf_models[f'latency_{target}'] = model
-            rmse_values.append(rmse_val)  # Store the RMSE value for validation
-            mae_values.append(mae_val)    # Store the MAE value for validation
-
-            # Print additional metrics for validation
-            print(f"Latency {target} - Validation R²: {r2_val:.4f}, MAE: {mae_val:.4f}, RMSE: {rmse_val:.4f}, MAPE: {mape_val:.2f}%, RMSE %: {rmse_percentage_val:.2f}%")
-
+            print(f"Latency {target} - R² score: {r2:.4f}, MAE: {mae:.4f}, RMSE: {rmse:.4f}")
+    
     return rf_models
-
-
-
-
-
-
-
-
-
-
-
-
     # Columns to use from each dataset
 resource_columns_conv = ['correct_reuse_factor_resource', 'n_inputs_resources', 'cnn_filters_resources', 'sequence_length_resource']
 latency_columns_conv = ['correct_reuse_factor_latency', 'n_inputs_latency', 'cnn_filters_latency', 'sequence_length_latency']
@@ -492,19 +448,18 @@ def optimize_reuse_factors_network(layers, filtered_factors, rf_models_conv, rf_
         total_lut_usage += lut_usage_pred
 
     
-     #Latency constraint
-    model.addConstr(total_latency_min <= 50000, "Latency_constraint")
+
+    #Latency constraint
+    model.addConstr(total_latency_max <= 50000, "Latency_constraint")
    
 
     # Objective function
     model.setObjective(total_bram_usage + total_dsp_usage + total_ff_usage + total_lut_usage ,GRB.MINIMIZE)
     # Optimize the model
     model.optimize()
+    # Optimize the model
+    model.optimize()
 
-    # Warning if slack being used
-    slack_used = any(var.X > 0 for var in [slack_bram, slack_dsp, slack_ff, slack_lut])
-    if slack_used:
-        print("WARNING: Slack variables were used, indicating that the network may not fit onto the ZCU104 Board.")
     
     # Extract optimal reuse factors 
     if model.status == GRB.OPTIMAL:
@@ -760,5 +715,6 @@ def generate_yaml_for_hls4ml(json_path, filename, optimized_reuse_factors):
     except IOError as e:
         print(f"ERROR: Could not open {yaml_path} for writing: {e}")
 
-
+# Example call to the function
 generate_yaml_for_hls4ml(filename, filename, optimal_reuse_factors)
+
