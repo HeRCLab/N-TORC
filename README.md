@@ -55,33 +55,23 @@ Optimizes reuse factors for each layer using Gurobi to minimize latency while re
 Generates HLS4ML-compatible YAML files for FPGA implementation.
 Supports evaluation and training of RandomForest models for resource and latency predictions.
 
-Prerequisites
-
-Required Libraries:
-
-pandas: Data manipulation and analysis.
-
-numpy: Numerical computing.
-
-scikit-learn: Machine learning algorithms (RandomForestRegressor).
-
-gurobipy: Optimization with Gurobi.
-
-matplotlib: Plotting (optional).
-
-yaml: YAML file handling.
-
-graphviz: Graph generation(optional).
-
-HLS4ML: For hardware synthesis after YAML generation.
-
-yaml: YAML file handling.
-
-json: JSON file handling.
-
-os: Operating system interaction.
-
-subprocess: Running shell commands.
-
-multiprocessing: Parallel processing.
-
+Cite our work
+```bash
+@inproceedings{10.1145/3706628.3708848,
+author = {Singh, Suyash Vardhan and Ahmad, Iftakhar and Andrews, David and Huang, Miaoqing and Downey, Austin R. J. and Bakos, Jason D.},
+title = {Resource Scheduling for Real-Time Machine Learning},
+year = {2025},
+isbn = {9798400713965},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3706628.3708848},
+doi = {10.1145/3706628.3708848},
+abstract = {Data-driven physics models offer the potential for substantially increasing the sample rate for applications in high-rate cyberphys- ical systems, such as model predictive control, structural health monitoring, and online smart sensing. Making this practical re- quires new model deployment tools that search for networks with maximum accuracy while meeting both real-time performance and resource constraints. Tools that generate customized architectures for machine learning models, such as HLS4ML and FINN, require manual control over latency and cost trade-offs for each layer. This poster describes a proposed end-to-end framework that combines Bayesian optimization for neural architecture search with Integer Linear Optimization of layer cost-latency trade-off using HLS4ML ''reuse factors''. The proposed framework is shown in Fig. 1 and consists of a performance model training phase and two model deployment stages. The performance model training phase generates training data and trains a model to predict the resource cost and latency of an HLS4ML deployment of a given layer and associated reuse factor on a given FPGA. The first model deployment stage takes training, test, and validation data for a physical system-in this case, the Dynamic Reproduction of Projectiles in Ballistic Environments for Advanced Research (DROPBEAR) dataset-and searches the hyper- parameter space for Pareto optimal models with respect to latency and workload, as measured by the number of multiplies required for one forward pass. For each of the models generated, a second stage uses the performance model to optimize the reuse factor of each layer to guarantee that the whole model meets the resource constraint while minimizing end-to-end latency. Table 1 shows the benefit of the reuse factor optimizer that comprises the second stage of the model deployment phase, The results compare the performance of a baseline stochastic search to that of our proposed optimizer for an example model consisting of four convolutional layers, three LSTM layers, and one dense layer. The results show sample stochastic search runs having 1K, 10K, 100K, and 1M trials over a total search space of 209 million reuse factor permutations. The stochastic search reaches a point of diminishing returns with latency 205 𝜂 while the optimizer achieves a latency of 190 𝜂 and requires roughly 1000X less search time.},
+booktitle = {Proceedings of the 2025 ACM/SIGDA International Symposium on Field Programmable Gate Arrays},
+pages = {50},
+numpages = {1},
+keywords = {hardware acceleration, high-level synthesis (hls), real-time control systems, resource scheduling},
+location = {Monterey, CA, USA},
+series = {FPGA '25}
+}
+```
