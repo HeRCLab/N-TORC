@@ -6,7 +6,7 @@ Commit changes to the docker
 Run all Python files inside the docker  
 
 ## For training Neural Networks:  
-Inside **dropbear_v45Data_optuna_new_BoTorchSampler.py**:  
+Inside **dropbear_v45Data_Classification_optuna_new_BoTorchSampler.py**:  
   
 step 1: Update data path of variables **pin_data_folderpath** and **acc_data_folderpath** with location of acceleration signals and pin location data.  
   
