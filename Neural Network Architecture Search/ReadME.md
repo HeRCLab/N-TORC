@@ -23,3 +23,15 @@ step 3: For the **zoomed-in** pareto-front plot, set **MODEL_COST_LIMIT = 0.055*
 
 step 4: Run the file. 
 
+
+## Plot Pareto Front Diagram:  
+Inside **data_processing_for_one_hump.py**:  
+
+step 1: Update **dir_path** with the directory path containing selected input acceleration signal data file, corresponding reference pin location file, and corresponding 2 predicted pin location files, one for a more accurate and another for less accurate model, and time values data file. 
+
+step 2: Specify those filenames in variables **filepath_acc, filepath_pin, filepath_pred_pin_bad, filepath_pred_pin_good, and filepath_time**.  
+
+step 3: Update **out_dir** with the output directory path to contain intermediate output files. 
+
+
+
