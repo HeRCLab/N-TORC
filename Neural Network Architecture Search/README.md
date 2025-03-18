@@ -48,5 +48,7 @@ step 2: Specify those filenames in variables **filepath_acc, filepath_pin, filep
   
 step 3: Update **out_dir** with the output directory path to contain intermediate output files.  
 
+step 4: Run the file.  
+
 
 
