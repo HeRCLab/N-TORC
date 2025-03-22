@@ -2,7 +2,7 @@
 
 1. Activate the conda environment
 ```bash
-conda activate hls4ml_explorer
+conda activate N-TORC
 ```
 2. Run the script
    ```bash
