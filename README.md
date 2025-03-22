@@ -1,4 +1,4 @@
-# HLS4ML explorer
+# N-TORC
 
 Example Usage: 
 ## Setting up the Environment
@@ -18,7 +18,7 @@ To set up the environment using `conda`, you can use the provided `environment.y
 4. Once the environment is created, activate it:
 
     ```bash
-    conda activate hls4ml_explorer
+    conda activate N-TORC
     ```
 
 5. Verify the environment is activated and all dependencies are installed:
@@ -33,7 +33,7 @@ To set up the environment using `conda`, you can use the provided `environment.y
     python src/optimizer.py three_lstm_model.json
     ```
 
-You are now ready to use the `hls4ml_explorer` environment and run the optimizer with the specified model.
+You are now ready to use the `N-TORC` environment and run the optimizer with the specified model.
 
 
 This will create a yaml file with the optimized reuse factor for each layer in the current directory.
