@@ -1,4 +1,4 @@
-name: hls4ml_explorer
+name: N-TORC
 channels:
   - conda-forge
   - defaults
