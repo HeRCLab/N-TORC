@@ -19,8 +19,8 @@ N-TORC-main/
 ├── dropbear_models/                     # Pre-generated JSON network models
 │   ├── *.json                           # Model descriptions (keras JSON)
 │   ├── *.yaml                           # hls4ml YAML config files
-│   ├── optimizer_run.py                 # ILP-based reuse factor optimizer (old)
-│   └── optimizer_updated.py             # Updated reuse optimizer
+│   ├── optimizer_run.py                 # ILP-based reuse factor optimizer for all the networks
+│   └── optimizer_updated.py             #  reuse factor optimizer
 │
 ├── fccm_artifact/                       # Artifact directory for FCCM submission
 │   ├── figure_8/                        # Plotting MATLAB scripts and combined tables
@@ -28,7 +28,7 @@ N-TORC-main/
 │   └── search/                          # Optimized YAMLs and configs for model search
 │
 ├── src/                                 # Source code for YAML generation and reuse optimization
-│   └── ...                              # (Add details depending on actual content)
+│  
 │
 ├── training_data_optimizer/            # RandomForest training and predictor modules
 │   └── ...                              # Scripts for latency and resource prediction
