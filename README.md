@@ -18,7 +18,6 @@ N-TORC-main/
 │
 ├── dropbear_models/                     # Pre-generated JSON network models
 │   ├── *.json                           # Model descriptions (keras JSON)
-│   ├── *.yaml                           # hls4ml YAML config files
 │   ├── optimizer_run.py                 # ILP-based reuse factor optimizer for all the networks
 │   └── optimizer_updated.py             #  reuse factor optimizer
 │
