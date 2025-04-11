@@ -1,4 +1,44 @@
-# N-TORC
+
+
+# N-TORC: Native Tensor Optimizer for Real-time Constraints
+
+**N-TORC** is a framework for efficient optimization of neural network architectures tailored for FPGA deployment under real-time constraints. It includes components for architecture search, reuse factor optimization using ILP and random forest regression, and full integration with HLS4ML for synthesis.
+
+---
+
+## 🔧 Directory Structure
+
+```
+N-TORC-main/
+├── Neural Network Architecture Search/   # Optuna-based architecture search scripts and dataset
+│   ├── dataset/                          # Raw input signal and timing data
+│   ├── dropbear_v45Data_*.py            # BoTorch + Optuna search strategies
+│   ├── data_processing_for_one_hump.py  # Data normalization and prep
+│   └── one_hump_plot_code.m             # MATLAB plotting script for one hump data
+│
+├── dropbear_models/                     # Pre-generated JSON network models
+│   ├── *.json                           # Model descriptions (keras JSON)
+│   ├── *.yaml                           # hls4ml YAML config files
+│   ├── optimizer_run.py                 # ILP-based reuse factor optimizer (old)
+│   └── optimizer_updated.py             # Updated reuse optimizer
+│
+├── fccm_artifact/                       # Artifact directory for FCCM submission
+│   ├── figure_8/                        # Plotting MATLAB scripts and combined tables
+│   ├── hls4ml_cost_models_fig4/        # MATLAB+CSV files for Figure 4 in paper
+│   └── search/                          # Optimized YAMLs and configs for model search
+│
+├── src/                                 # Source code for YAML generation and reuse optimization
+│   └── ...                              # (Add details depending on actual content)
+│
+├── training_data_optimizer/            # RandomForest training and predictor modules
+│   └── ...                              # Scripts for latency and resource prediction
+│
+├── three_lstm_model.h5                 # Pretrained weights for 3-layer LSTM
+├── three_lstm_model.json               # JSON description of 3-layer LSTM
+├── environment.yml                     # Conda environment file for dependency setup
+
+```
+
 
 Example Usage: 
 ## Setting up the Environment
