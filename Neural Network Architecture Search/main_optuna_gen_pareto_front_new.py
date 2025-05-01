@@ -142,7 +142,7 @@ def create_model(n_CNN_layers, CNN_filters_size, n_LSTM_layers, LSTM_units, n_ML
         model.add(tf.keras.layers.Dense(MLP_units[i], activation="relu"))
 
     # final
-    model.add(tf.keras.layers.Dense(1))
+    model.add(tf.keras.layers.Dense(256))
     model.compile(loss='mse', optimizer='adam')
 
 
