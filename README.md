@@ -7,7 +7,7 @@
 ## 📄 Paper
 
 You can read our full FCCM'25 paper here:  
-[N-TORC: Native Tensor Optimizer for Real-Time Constraints (FCCM 2025)](./docs/N-TORC_Native_Tensor_Optimizer_for_Real-Time_Constraints_FCCM.pdf)
+[N-TORC: Native Tensor Optimizer for Real-Time Constraints (FCCM 2025)](./docs/N_TORC_FCCM_2025.pdf)
 
 
 ---
