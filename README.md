@@ -95,6 +95,24 @@ Generates HLS4ML-compatible YAML files for FPGA implementation.
 Supports evaluation and training of RandomForest models for resource and latency predictions.
 
 Cite our work
+FCCM'25
+```bash
+@INPROCEEDINGS{11008949,
+  author={Singh, Suyash Vardhan and Ahmad, Iftakhar and Andrews, David and Huang, Miaoqing and Downey, Austin R.J. and Bakos, Jason D.},
+  booktitle={2025 IEEE 33rd Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM)}, 
+  title={N-TORC: Native Tensor Optimizer for Real-Time Constraints}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={152-161},
+  keywords={Tensors;Accuracy;Costs;Projectiles;Computational modeling;Memory management;Stochastic processes;Hyperparameter optimization;Real-time systems;Optimization;machine learning;real-time;high-level synthesis;hls4ml;performance modeling},
+  doi={10.1109/FCCM62733.2025.00061}}
+
+
+```
+
+FPGA'25
+
 ```bash
 @inproceedings{10.1145/3706628.3708848,
 author = {Singh, Suyash Vardhan and Ahmad, Iftakhar and Andrews, David and Huang, Miaoqing and Downey, Austin R. J. and Bakos, Jason D.},
