@@ -4,6 +4,12 @@
 
 **N-TORC** is a framework for efficient optimization of neural network architectures tailored for FPGA deployment under real-time constraints. It includes components for architecture search, reuse factor optimization using ILP and random forest regression, and full integration with HLS4ML for synthesis.
 
+## 📄 Paper
+
+You can read our full FCCM'25 paper here:  
+[N-TORC: Native Tensor Optimizer for Real-Time Constraints (FCCM 2025)](./docs/N-TORC_Native_Tensor_Optimizer_for_Real-Time_Constraints_FCCM.pdf)
+
+
 ---
 
 ## 🔧 Directory Structure
