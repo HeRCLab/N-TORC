@@ -151,7 +151,7 @@ def process_directory(directory):
     with pool:
         run_hls4ml_build(directory)
 
-pool = multiprocessing.Semaphore(110)  # Limit to 75 concurrent processes
+pool = multiprocessing.Semaphore(75)  # Limit to 75 concurrent processes
 with multiprocessing.Pool() as pool:
     pool.map(process_directory, directories)
 
