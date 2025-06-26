@@ -17,3 +17,4 @@ dependencies:
   - pip:
       - hls4ml
       - gurobipy
+      - graphviz
